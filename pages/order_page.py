@@ -1,75 +1,63 @@
 import sys
 import os
-from selenium.webdriver.support.wait import WebDriverWait
+import allure
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pages.locators import OrderPageLocators
+from pages.base_page import BasePage
 
-class OrderPage:
+class OrderPage(BasePage):
     def __init__(self, driver):
-        self.driver = driver
+        super().__init__(driver)
         self.locators = OrderPageLocators()
     
+    @allure.step("Заполнить информацию о клиенте")
     def fill_customer_info(self, name, lastname, address, metro_station, phone):
-        WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_element_located(self.locators.NAME_INPUT)
-        ).send_keys(name)
-        
-        self.driver.find_element(*self.locators.LASTNAME_INPUT).send_keys(lastname)
-        self.driver.find_element(*self.locators.ADDRESS_INPUT).send_keys(address)
-        
-        metro_input = self.driver.find_element(*self.locators.METRO_INPUT)
-        metro_input.click()
-        
-        stations = WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_all_elements_located(self.locators.METRO_STATION)
-        )
-        stations[metro_station].click()
-        
-        self.driver.find_element(*self.locators.PHONE_INPUT).send_keys(phone)
-    
-    def fill_rent_info(self, date, period, color, comment):
-        date_input = WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.locators.DATE_INPUT)
-        )
-        date_input.clear()
-        date_input.send_keys(date)
-        
-        dropdown = WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.locators.RENTAL_PERIOD)
-        )
-        dropdown.click()
-        
-        periods = WebDriverWait(self.driver, 10).until(
+        self.send_keys(self.locators.NAME_INPUT, name, timeout=20)
+        self.send_keys(self.locators.LASTNAME_INPUT, lastname)
+        self.send_keys(self.locators.ADDRESS_INPUT, address)
+        self.safe_click(self.locators.METRO_INPUT)
+        self.click_metro_station(self.locators.METRO_STATION, metro_station)
+        self.send_keys(self.locators.PHONE_INPUT, phone)
+
+    @allure.step("Нажать кнопку 'Далее'")
+    def click_next_button(self):
+        self.safe_click(self.locators.NEXT_BUTTON, timeout=20)
+
+    @allure.step("Установить дату доставки: {date}")
+    def set_delivery_date(self, date):
+        self.close_datepicker()
+        element = self.wait_for_clickable(self.locators.DATE_INPUT, timeout=20)
+        element.clear()
+        element.send_keys(date)
+        self.close_datepicker()
+
+    @allure.step("Выбрать период аренды: {period_index}")
+    def select_rental_period(self, period_index):
+        self.close_datepicker()
+        self.safe_click(self.locators.RENTAL_PERIOD, timeout=20)
+        periods = WebDriverWait(self.driver, 20).until(
             EC.visibility_of_all_elements_located(self.locators.PERIOD_OPTION)
         )
-        periods[period].click()
-        
-        if color is not None:
-            colors = WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_all_elements_located(self.locators.COLOR_CHECKBOX)
-            )
-            colors[color].click()
-        
-        if comment:
-            comment_input = self.driver.find_element(*self.locators.COMMENT_INPUT)
-            comment_input.send_keys(comment)
-        
-        order_button = WebDriverWait(self.driver, 15).until(
-            EC.element_to_be_clickable(self.locators.ORDER_BUTTON)
-        )
-        order_button.click()
-        
-        confirm_button = WebDriverWait(self.driver, 15).until(
-            EC.element_to_be_clickable(self.locators.CONFIRM_BUTTON)
-        )
-        confirm_button.click()
-    
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", periods[period_index])
+        self.driver.execute_script("arguments[0].click();", periods[period_index])
+
+    @allure.step("Выбрать цвет самоката: {color_index}")
+    def select_scooter_color(self, color_index):
+        colors = self.get_elements(self.locators.COLOR_CHECKBOX, timeout=20)
+        self.driver.execute_script("arguments[0].click();", colors[color_index])
+
+    @allure.step("Добавить комментарий: {comment}")
+    def add_comment(self, comment):
+        self.send_keys(self.locators.COMMENT_INPUT, comment)
+
+    @allure.step("Подтвердить заказ")
+    def confirm_order(self):
+        self.safe_click(self.locators.ORDER_BUTTON, timeout=20)
+        self.safe_click(self.locators.CONFIRM_BUTTON, timeout=20)
+
+    @allure.step("Проверить создание заказа")
     def is_order_created(self):
-        try:
-            return WebDriverWait(self.driver, 20).until(
-                EC.visibility_of_element_located(self.locators.SUCCESS_MESSAGE)
-            ).is_displayed()
-        except:
-            return False
+        return self.is_element_visible(self.locators.SUCCESS_MESSAGE, timeout=20)

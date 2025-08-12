@@ -44,4 +44,5 @@ class OrderPageLocators:
     
 class BaseLocators:
     BODY = (By.TAG_NAME, 'body')
+    COOKIE_BANNER = (By.ID, "rcc-confirm-button")
     
