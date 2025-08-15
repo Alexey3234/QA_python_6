@@ -2,8 +2,8 @@ from selenium.webdriver.common.by import By
 
 class MainPageLocators:
     # Локаторы для главной страницы
-    ORDER_BUTTON_HEADER = (By.XPATH, "//button[contains(@class, 'Button_Button__ra12g')]")
-    ORDER_BUTTON_FOOTER = (By.XPATH, "(//button[contains(text(), 'Заказать')])[2]")
+    ORDER_BUTTON_HEADER = (By.XPATH, "//button[contains(@class, 'Button_Button__ra12g') and text()='Заказать']")
+    ORDER_BUTTON_FOOTER = (By.XPATH, "//button[contains(@class, 'Button_Button__ra12g') and contains(text(), 'Заказать')]")
     QUESTIONS_SECTION = (By.XPATH, "//div[contains(text(), 'Вопросы о важном')]")
     QUESTION_ITEMS = (By.XPATH, "//div[@class='accordion__item']")
     QUESTION = (By.XPATH, ".//div[contains(@class, 'accordion__button')]")
@@ -12,6 +12,8 @@ class MainPageLocators:
     YANDEX_LOGO = (By.XPATH, "//a[@class='Header_LogoYandex__3TSOI']")
     QUESTION_HEADER = (By.CSS_SELECTOR, "[data-accordion-component='AccordionItemButton']")
     QUESTION_PANEL = (By.CSS_SELECTOR, "[data-accordion-component='AccordionItemPanel']")
+    COOKIE_BANNER = (By.ID, "rcc-confirm-button")
+    MAIN_PAGE_IDENTIFIER = (By.XPATH, "//div[contains(@class, 'Home_Header')]")
     @staticmethod
     def question_by_index(index):
         return (By.ID, f"accordion__heading-{index}")
@@ -44,5 +46,5 @@ class OrderPageLocators:
     
 class BaseLocators:
     BODY = (By.TAG_NAME, 'body')
-    COOKIE_BANNER = (By.ID, "rcc-confirm-button")
+
     

@@ -1,53 +1,57 @@
-import sys
-import os
 import allure
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pages.locators import OrderPageLocators
 from pages.base_page import BasePage
+from pages.locators import OrderPageLocators
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent  # Получаем путь к корню проекта
+sys.path.append(str(project_root))  # Добавляем в PYTHONPATH
+
+
 
 class OrderPage(BasePage):
     def __init__(self, driver):
         super().__init__(driver)
         self.locators = OrderPageLocators()
     
+    @allure.step("Кликнуть на элемент из списка по индексу {index}")
+    def click_element_from_list(self, locator, index):
+        elements = self.get_elements(locator)
+        if not elements:
+            raise ValueError("Список элементов пуст")
+        if index < 0 or index >= len(elements):
+            raise ValueError(f"Недопустимый индекс: {index}. Доступно элементов: {len(elements)}")
+        
+        self.scroll_to_element(elements[index])
+        self.click(elements[index])
+    
     @allure.step("Заполнить информацию о клиенте")
     def fill_customer_info(self, name, lastname, address, metro_station, phone):
-        self.send_keys(self.locators.NAME_INPUT, name, timeout=20)
+        self.send_keys(self.locators.NAME_INPUT, name)
         self.send_keys(self.locators.LASTNAME_INPUT, lastname)
         self.send_keys(self.locators.ADDRESS_INPUT, address)
         self.safe_click(self.locators.METRO_INPUT)
-        self.click_metro_station(self.locators.METRO_STATION, metro_station)
+        self.click_element_from_list(self.locators.METRO_STATION, metro_station)
         self.send_keys(self.locators.PHONE_INPUT, phone)
 
     @allure.step("Нажать кнопку 'Далее'")
     def click_next_button(self):
-        self.safe_click(self.locators.NEXT_BUTTON, timeout=20)
+        self.safe_click(self.locators.NEXT_BUTTON)
 
     @allure.step("Установить дату доставки: {date}")
     def set_delivery_date(self, date):
         self.close_datepicker()
-        element = self.wait_for_clickable(self.locators.DATE_INPUT, timeout=20)
-        element.clear()
-        element.send_keys(date)
+        self.clear_and_send_keys(self.locators.DATE_INPUT, date)
         self.close_datepicker()
 
     @allure.step("Выбрать период аренды: {period_index}")
     def select_rental_period(self, period_index):
         self.close_datepicker()
-        self.safe_click(self.locators.RENTAL_PERIOD, timeout=20)
-        periods = WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_all_elements_located(self.locators.PERIOD_OPTION)
-        )
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", periods[period_index])
-        self.driver.execute_script("arguments[0].click();", periods[period_index])
+        self.safe_click(self.locators.RENTAL_PERIOD)
+        self.click_element_from_list(self.locators.PERIOD_OPTION, period_index)
 
     @allure.step("Выбрать цвет самоката: {color_index}")
     def select_scooter_color(self, color_index):
-        colors = self.get_elements(self.locators.COLOR_CHECKBOX, timeout=20)
-        self.driver.execute_script("arguments[0].click();", colors[color_index])
+        self.click_element_from_list(self.locators.COLOR_CHECKBOX, color_index)
 
     @allure.step("Добавить комментарий: {comment}")
     def add_comment(self, comment):
@@ -55,9 +59,9 @@ class OrderPage(BasePage):
 
     @allure.step("Подтвердить заказ")
     def confirm_order(self):
-        self.safe_click(self.locators.ORDER_BUTTON, timeout=20)
-        self.safe_click(self.locators.CONFIRM_BUTTON, timeout=20)
+        self.safe_click(self.locators.ORDER_BUTTON)
+        self.safe_click(self.locators.CONFIRM_BUTTON)
 
     @allure.step("Проверить создание заказа")
     def is_order_created(self):
-        return self.is_element_visible(self.locators.SUCCESS_MESSAGE, timeout=20)
+        return self.is_element_visible(self.locators.SUCCESS_MESSAGE)

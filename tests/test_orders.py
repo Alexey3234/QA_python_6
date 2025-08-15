@@ -2,57 +2,28 @@ import sys
 import os
 import pytest
 import allure
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pages.main_page import MainPage
-from pages.order_page import OrderPage
-from pages.base_page import BasePage
+# Добавляем путь к корню проекта
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pages.data import ORDER_DATA
 
 
 class TestOrderFlow:
-    ORDER_DATA = [
-        {
-            "name": "Иван",
-            "lastname": "Иванов",
-            "address": "Москва, ул. Ленина, 1",
-            "metro_station": 0,
-            "phone": "89998887766",
-            "date": "01.01.2023",
-            "period": 0,
-            "color": 0,
-            "comment": "Тестовый заказ"
-        },
-        {
-            "name": "Петр",
-            "lastname": "Петров",
-            "address": "Санкт-Петербург, Невский пр., 10",
-            "metro_station": 1,
-            "phone": "87776665544",
-            "date": "02.02.2023",
-            "period": 1,
-            "color": 1,
-            "comment": "Второй тестовый заказ"
-        }
-    ]
-
     @allure.feature('Оформление заказа')
     @allure.story('Заказ через кнопку в шапке')
     @allure.title('Проверка оформления заказа через кнопку в шапке сайта')
     @pytest.mark.parametrize("order_data", ORDER_DATA)
-    def test_order_flow_from_header(self, driver, order_data):
-        main_page = MainPage(driver)
-        order_page = OrderPage(driver)
-
+    def test_order_flow_from_header(self, main_page, order_page, order_data):
         with allure.step('Открытие формы заказа через кнопку в шапке'):
             main_page.click_order_button_header()
 
         with allure.step('Заполнение информации о клиенте'):
             order_page.fill_customer_info(
-                order_data["name"],
-                order_data["lastname"],
-                order_data["address"],
-                order_data["metro_station"],
-                order_data["phone"]
+                name=order_data["name"],
+                lastname=order_data["lastname"],
+                address=order_data["address"],
+                metro_station=order_data["metro_station"],
+                phone=order_data["phone"]
             )
 
         with allure.step('Переход к следующему шагу оформления'):
@@ -79,25 +50,23 @@ class TestOrderFlow:
     @allure.feature('Оформление заказа')
     @allure.story('Заказ через кнопку в подвале')
     @allure.title('Проверка оформления заказа через кнопку в подвале сайта')
-    def test_order_flow_from_footer(self, driver):
-        order_data = self.ORDER_DATA[0]
-        main_page = MainPage(driver)
-        order_page = OrderPage(driver)
-        base_page = BasePage(driver)
+    def test_order_flow_from_footer(self, main_page, order_page):
+        order_data = ORDER_DATA[0]
 
         with allure.step('Закрытие куки-баннера, если он есть'):
-            base_page.close_cookie_banner()
-    
+            main_page.close_cookie_banner()
+                
         with allure.step('Открытие формы заказа через кнопку в подвале'):
             main_page.click_order_button_footer()
+            
 
         with allure.step('Заполнение информации о клиенте'):
             order_page.fill_customer_info(
-                order_data["name"],
-                order_data["lastname"],
-                order_data["address"],
-                order_data["metro_station"],
-                order_data["phone"]
+                name=order_data["name"],
+                lastname=order_data["lastname"],
+                address=order_data["address"],
+                metro_station=order_data["metro_station"],
+                phone=order_data["phone"]
             )
 
         with allure.step('Переход к следующему шагу оформления'):
@@ -126,32 +95,28 @@ class TestNavigation:
     @allure.feature('Навигация')
     @allure.story('Редирект по логотипу Самоката')
     @allure.title('Проверка редиректа на главную страницу по логотипу Самоката')
-    def test_scooter_logo_redirect(self, driver):
-        main_page = MainPage(driver)
-        base_page = BasePage(driver)
-
+    def test_scooter_logo_redirect(self, main_page):
         with allure.step('Клик по логотипу Самоката'):
             main_page.click_scooter_logo()
 
         with allure.step('Проверка редиректа на главную страницу'):
-            assert base_page.is_current_url("https://qa-scooter.praktikum-services.ru/")
+            assert main_page.is_main_page_opened()
 
     @allure.feature('Навигация')
     @allure.story('Редирект по логотипу Яндекса')
     @allure.title('Проверка редиректа на Dzen по логотипу Яндекса')
-    def test_yandex_logo_redirect(self, driver):
-        main_page = MainPage(driver)
-        base_page = BasePage(driver)
-
+    def test_yandex_logo_redirect(self, main_page):
         with allure.step('Клик по логотипу Яндекса'):
             main_page.click_yandex_logo()
 
         with allure.step('Переключение на новую вкладку'):
-            base_page.switch_to_new_window()
+            main_page.switch_to_new_window()
 
         with allure.step('Проверка редиректа на Dzen'):
-            base_page.wait_for_url_contains("dzen.ru")
+            assert main_page.is_dzen_page_opened()
     
         with allure.step('Закрытие новой вкладки и возврат'):
-            driver.close()
-            driver.switch_to.window(driver.window_handles[0])
+            main_page.close_current_window()
+            
+        with allure.step('Проверка, что вернулись на исходную страницу'):
+            assert main_page.is_main_page_opened()
