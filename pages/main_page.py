@@ -1,11 +1,11 @@
 import sys
-import os
+from pathlib import Path
 import allure
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pages.locators import MainPageLocators
 from pages.base_page import BasePage
-from selenium.webdriver.support import expected_conditions as EC
+from pages.locators import MainPageLocators
 
 class MainPage(BasePage):
     def __init__(self, driver):
@@ -14,7 +14,7 @@ class MainPage(BasePage):
     
     @allure.step("Открыть главную страницу")
     def open(self):
-        self.driver.get("https://qa-scooter.praktikum-services.ru/")
+        self.get_url("https://qa-scooter.praktikum-services.ru/")
         return self
     
     @allure.step("Закрыть куки-баннер")
@@ -32,8 +32,8 @@ class MainPage(BasePage):
     
     @allure.step("Нажать кнопку 'Заказать' в футере")
     def click_order_button_footer(self, timeout=20):
-        self.wait.until(EC.presence_of_element_located(self.locators.ORDER_BUTTON_FOOTER))
-        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        self.wait_for_presence(self.locators.ORDER_BUTTON_FOOTER, timeout)
+        self.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         self.safe_click(self.locators.ORDER_BUTTON_FOOTER, timeout)
     
     @allure.step("Нажать логотип 'Самокат'")
@@ -44,6 +44,14 @@ class MainPage(BasePage):
     def click_yandex_logo(self):
         self.click(self.locators.YANDEX_LOGO)
         self.switch_to_new_window()
+
+    @allure.step("Закрыть текущее окно и вернуться")
+    def close_current_window(self):
+        if self.get_windows_count() > 1:
+            self.close_window()
+            self.switch_to_window_by_index(0)
+            return True
+        return False
 
     @allure.step("Кликнуть на вопрос с индексом {question_index}")
     def click_question(self, question_index):
@@ -63,8 +71,8 @@ class MainPage(BasePage):
 
     @allure.step("Проверить, что все ответы свернуты")
     def are_all_answers_collapsed(self):
-        answers = self.get_elements(self.locators.ALL_ANSWERS, timeout=20)
-        return all(not self.is_element_visible_from_list(answers))
+        answers = self.get_elements(self.locators.QUESTION_PANEL, timeout=20)
+        return all(not self.is_element_visible(answer) for answer in answers)
 
     @allure.step("Прокрутить к разделу вопросов")
     def scroll_to_questions_section(self):
@@ -77,7 +85,3 @@ class MainPage(BasePage):
     @allure.step("Проверить, что открыта страница Dzen")
     def is_dzen_page_opened(self):
         return self.wait_for_url_contains("dzen.ru")
-
-    @allure.step("Проверить видимость элементов из списка")
-    def is_element_visible_from_list(self, elements):
-        return all(self.is_element_visible(element) for element in elements)

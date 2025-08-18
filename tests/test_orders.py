@@ -3,7 +3,6 @@ import os
 import pytest
 import allure
 
-# Добавляем путь к корню проекта
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pages.data import ORDER_DATA
 
